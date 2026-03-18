@@ -1,0 +1,29 @@
+name: 每日新聞報告
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # UTC 00:00 = 台灣時間早上 8:00
+  workflow_dispatch:       # 允許手動觸發
+
+jobs:
+  news-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout 專案
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: 安裝相依套件
+        run: pip install -r requirements.txt
+
+      - name: 執行新聞報告腳本
+        env:
+          GEMINI_API_KEY: ${{ secrets.AIzaSyBvH0WJs3vAjqlYPWxhZAA07ncfMXVJuUI }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.4438fa5db4ebca78229bf631d3e35a0d }}
+          LINE_USER_ID: ${{ secrets.Ucaee903ef017dbd26efba79ca1730cf4 }}
+        run: python scripts/news_report.py
