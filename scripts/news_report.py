@@ -1,6 +1,7 @@
 import feedparser
 import requests
 import os
+import time
 from datetime import datetime
 
 # ============================================================
@@ -19,7 +20,7 @@ TOPICS = [
 MAX_NEWS_PER_TOPIC = 5
 
 # Gemini 使用的模型（免費）
-GEMINI_MODEL = "gemini-2.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash"
 
 
 def fetch_news(topic: str) -> list[dict]:
@@ -65,14 +66,23 @@ def summarize_with_gemini(topic: str, articles: list[dict]) -> str:
         "contents": [{"parts": [{"text": prompt}]}]
     }
 
-    res = requests.post(url, json=payload)
+    # 最多重試 3 次（應對 429/503 暫時性錯誤）
+    for attempt in range(3):
+        res = requests.post(url, json=payload)
 
-    if res.status_code != 200:
-        print(f"❌ Gemini API 錯誤：{res.status_code} {res.text}")
-        return "（摘要產生失敗，請檢查 API Key）"
+        if res.status_code == 200:
+            data = res.json()
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+        elif res.status_code in (429, 503):
+            wait = (attempt + 1) * 10  # 第1次等10秒，第2次等20秒，第3次等30秒
+            print(f"⚠️ Gemini 暫時無法使用（{res.status_code}），{wait} 秒後重試（第 {attempt + 1} 次）...")
+            time.sleep(wait)
+        else:
+            print(f"❌ Gemini API 錯誤：{res.status_code} {res.text}")
+            return "（摘要產生失敗，請檢查 API Key）"
 
-    data = res.json()
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+    print(f"❌ Gemini 重試 3 次仍失敗，跳過此主題")
+    return "（Gemini 伺服器忙碌，請稍後再試）"
 
 
 def send_line(message: str) -> None:
