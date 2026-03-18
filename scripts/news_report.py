@@ -16,7 +16,7 @@ TOPICS = [
 MAX_NEWS_PER_TOPIC = 5
 
 # Gemini 使用的模型（免費）
-GEMINI_MODEL = "gemini-2.0-flash"
+GEMINI_MODEL = "gemini-2.5-flash"
 
 
 def fetch_news(topic: str) -> list[dict]:
